@@ -1,0 +1,56 @@
+{
+  "metadata": {
+    "invocation_id": "synthetic-documentation-example",
+    "dbt_version": "1.11.0",
+    "generated_at": "2026-01-01T00:00:00Z"
+  },
+  "nodes": {
+    "seed.shop.raw_orders": {
+      "name": "raw_orders",
+      "alias": "raw_orders",
+      "resource_type": "seed",
+      "database": "lake",
+      "schema": "raw",
+      "config": {
+        "materialized": "seed"
+      },
+      "depends_on": {
+        "nodes": []
+      },
+      "unique_id": "seed.shop.raw_orders"
+    },
+    "model.shop.stg_orders": {
+      "name": "stg_orders",
+      "alias": "stg_orders",
+      "resource_type": "model",
+      "database": "lake",
+      "schema": "staging",
+      "config": {
+        "materialized": "table"
+      },
+      "depends_on": {
+        "nodes": [
+          "seed.shop.raw_orders"
+        ]
+      },
+      "unique_id": "model.shop.stg_orders"
+    },
+    "model.shop.customer_revenue": {
+      "name": "customer_revenue",
+      "alias": "customer_revenue",
+      "resource_type": "model",
+      "database": "lake",
+      "schema": "marts",
+      "config": {
+        "materialized": "table"
+      },
+      "depends_on": {
+        "nodes": [
+          "model.shop.stg_orders"
+        ]
+      },
+      "unique_id": "model.shop.customer_revenue"
+    }
+  },
+  "sources": {}
+}

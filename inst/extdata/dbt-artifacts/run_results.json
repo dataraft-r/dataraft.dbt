@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "invocation_id": "synthetic-documentation-example",
+    "dbt_version": "1.11.0",
+    "generated_at": "2026-01-01T00:00:00Z"
+  },
+  "results": [
+    {
+      "unique_id": "seed.shop.raw_orders",
+      "status": "success",
+      "execution_time": 0.1,
+      "failures": null,
+      "message": "Synthetic documentation fixture"
+    },
+    {
+      "unique_id": "model.shop.stg_orders",
+      "status": "success",
+      "execution_time": 0.1,
+      "failures": null,
+      "message": "Synthetic documentation fixture"
+    },
+    {
+      "unique_id": "model.shop.customer_revenue",
+      "status": "success",
+      "execution_time": 0.1,
+      "failures": null,
+      "message": "Synthetic documentation fixture"
+    }
+  ]
+}
