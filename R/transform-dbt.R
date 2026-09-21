@@ -41,31 +41,31 @@ dr_transform_dbt <- function(
   timeout = Inf
 ) {
   if (!inherits(project, "dr_dbt_project")) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "project must come from dr_dbt_project()."
     )
   }
-  dataraft.core::scalar(model, "model")
+  dataraft.core::dr_internal_scalar(model, "model")
   if (
     !grepl("^model\\.[A-Za-z_][A-Za-z0-9_]*\\.[A-Za-z_][A-Za-z0-9_]*$", model)
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "model must be an exact dbt unique ID such as 'model.shop.orders'."
     )
   }
   if (!is.function(connection)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "connection must be a function opening a new DBI connection; dbt needs R connections closed while it runs."
     )
   }
   if (!inherits(input, "Id")) {
-    dataraft.core::scalar(input, "input staging table")
+    dataraft.core::dr_internal_scalar(input, "input staging table")
   }
-  dataraft.core::flag(full_refresh, "full_refresh")
-  dataraft.core::flag(echo, "echo")
+  dataraft.core::dr_internal_flag(full_refresh, "full_refresh")
+  dataraft.core::dr_internal_flag(echo, "echo")
   structure(
     list(
       project = project,
@@ -85,16 +85,16 @@ dr_transform_dbt <- function(
 #' @export
 #' @importFrom dataraft.core dr_check_component
 dr_check_component.dr_dbt_transform <- function(x, ...) {
-  dataraft.core::need("processx")
+  dataraft.core::dr_internal_need("processx")
   if (!file.exists(file.path(x$project$path, "dbt_project.yml"))) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The dbt project is missing dbt_project.yml. Check dr_transform_dbt(project = ...)."
     )
   }
   executable <- x$project$executable
   if (!nzchar(Sys.which(executable)) && !file.exists(executable)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Install dbt and set dr_dbt_project(executable = ...) before running this transform."
     )
@@ -150,7 +150,7 @@ dr_execute_transform.dr_dbt_transform <- function(transform, data, ...) {
       identical(node$config$materialized, "ephemeral") ||
       !transform$model %in% succeeded
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The requested materialized dbt model did not succeed in this build.",
       "dr_dbt_invalid",
@@ -158,9 +158,12 @@ dr_execute_transform.dr_dbt_transform <- function(transform, data, ...) {
     )
   }
   relation <- DBI::Id(
-    catalog = dataraft.core::scalar(node$database, "dbt database"),
-    schema = dataraft.core::scalar(node$schema, "dbt schema"),
-    table = dataraft.core::scalar(node$alias %||% node$name, "dbt relation")
+    catalog = dataraft.core::dr_internal_scalar(node$database, "dbt database"),
+    schema = dataraft.core::dr_internal_scalar(node$schema, "dbt schema"),
+    table = dataraft.core::dr_internal_scalar(
+      node$alias %||% node$name,
+      "dbt relation"
+    )
   )
   output <- with_dbt_connection(transform$connection, function(con) {
     tibble::as_tibble(DBI::dbReadTable(con, relation))
@@ -179,7 +182,7 @@ with_dbt_connection <- function(factory, fn) {
   rlang::local_error_call(rlang::caller_env())
   con <- factory()
   if (!inherits(con, "DBIConnection") || !DBI::dbIsValid(con)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The dbt connection factory must return a valid new DBI connection."
     )

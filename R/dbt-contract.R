@@ -43,16 +43,16 @@ dr_dbt_contract <- function(
   unsupported = c("error", "report")
 ) {
   if (!inherits(contract, "dr_contract")) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Use dr_contract() to define the R schema first.",
       "dr_dbt_invalid"
     )
   }
-  dataraft.core::ident(name)
-  dataraft.core::flag(enforced, "enforced")
+  dataraft.core::dr_internal_ident(name)
+  dataraft.core::dr_internal_flag(enforced, "enforced")
   if (enforced) {
-    dataraft.core::assert_contract_ready(contract)
+    dataraft.core::dr_internal_assert_contract_ready(contract)
   }
   unsupported <- match.arg(unsupported)
   columns <- unlist(contract$columns, use.names = TRUE)
@@ -65,7 +65,7 @@ dr_dbt_contract <- function(
       any(!nzchar(names(columns))) ||
       anyDuplicated(names(columns))
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The contract contains an invalid column schema.",
       "dr_dbt_invalid"
@@ -119,7 +119,7 @@ dr_dbt_contract <- function(
       "."
     )
     if (unsupported == "error") {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         message,
         "dr_dbt_contract_untranslated",
@@ -200,7 +200,7 @@ dbt_sql_types <- function(columns, overrides = NULL) {
         !all(names(overrides) %in% names(columns)) ||
         any(!grepl("^[A-Za-z][A-Za-z0-9_ (),\\[\\]]*$", overrides, perl = TRUE))
     ) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         "types must name declared columns and contain explicit SQL types.",
         "dr_dbt_invalid"
@@ -209,7 +209,7 @@ dbt_sql_types <- function(columns, overrides = NULL) {
     result[names(overrides)] <- overrides
   }
   if (anyNA(result)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       paste0(
         "Supply explicit SQL types for: ",

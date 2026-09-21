@@ -55,8 +55,8 @@ dr_dbt_publish <- function(
   notify = NULL,
   stop_on_failure = TRUE
 ) {
-  dataraft.core::scalar(model, "model")
-  dataraft.core::flag(stop_on_failure, "stop_on_failure")
+  dataraft.core::dr_internal_scalar(model, "model")
+  dataraft.core::dr_internal_flag(stop_on_failure, "stop_on_failure")
   if (
     !inherits(result, "dr_dbt_result") ||
       !isTRUE(result$success) ||
@@ -70,7 +70,7 @@ dr_dbt_publish <- function(
       anyDuplicated(result$results$unique_id) ||
       !all(result$results$status %in% c("success", "pass", "warn"))
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Publication requires a successful dbt build result.",
       "dr_dbt_invalid"
@@ -87,13 +87,13 @@ dr_dbt_publish <- function(
       identical(node$config$materialized, "ephemeral") ||
       !model %in% result$results$unique_id[result$results$status == "success"]
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The selected materialized node must have succeeded in this build.",
       "dr_dbt_invalid"
     )
   }
-  invocation <- dataraft.core::scalar(
+  invocation <- dataraft.core::dr_internal_scalar(
     result$manifest$metadata$invocation_id,
     "dbt invocation ID"
   )
@@ -101,22 +101,22 @@ dr_dbt_publish <- function(
     !is.null(result$invocation_id) &&
       !identical(result$invocation_id, invocation)
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The dbt result and manifest must describe the same invocation.",
       "dr_dbt_invalid"
     )
   }
   asset <- asset %||% node$name
-  dataraft.core::asset_id(asset)
+  dataraft.core::dr_internal_asset_id(asset)
   code_version <- code_version %||% dbt_publication_code(result$manifest)
-  dataraft.core::scalar(code_version, "code_version")
+  dataraft.core::dr_internal_scalar(code_version, "code_version")
   if (!is.null(version)) {
-    dataraft.core::scalar(version, "version")
+    dataraft.core::dr_internal_scalar(version, "version")
   }
   if (!is.null(contract)) {
     if (!inherits(contract, "dr_contract")) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         "contract must be a contract."
       )
@@ -125,43 +125,49 @@ dr_dbt_publish <- function(
       contract$id <- paste0(asset, ".contract")
       attr(contract, "dr_anonymous") <- NULL
     }
-    dataraft.core::assert_contract_ready(contract)
+    dataraft.core::dr_internal_assert_contract_ready(contract)
   }
   owned <- inherits(lake, "dr_config")
   if (owned) {
     lake <- dataraft.lake::dr_connect_lake(lake)
     on.exit(dataraft.lake::dr_close_lake(lake), add = TRUE)
   }
-  dataraft.lake::assert_writable(lake)
-  dataraft.lake::assert_table_asset(lake, asset)
+  dataraft.lake::dr_internal_assert_writable(lake)
+  dataraft.lake::dr_internal_assert_table_asset(lake, asset)
   if (is.null(layer)) {
     layer <- intersect(c("marts", "products"), lake$config$layers)[1L]
     if (is.na(layer)) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         "Configure a marts or products layer, or supply layer explicitly."
       )
     }
   }
-  dataraft.core::ident(layer)
+  dataraft.core::dr_internal_ident(layer)
   if (!layer %in% lake$config$layers) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Publication layer is not configured."
     )
   }
   relation <- DBI::Id(
-    catalog = dataraft.core::scalar(node$database, "dbt database"),
-    schema = dataraft.core::scalar(node$schema, "dbt schema"),
-    table = dataraft.core::scalar(node$alias %||% node$name, "dbt relation")
+    catalog = dataraft.core::dr_internal_scalar(node$database, "dbt database"),
+    schema = dataraft.core::dr_internal_scalar(node$schema, "dbt schema"),
+    table = dataraft.core::dr_internal_scalar(
+      node$alias %||% node$name,
+      "dbt relation"
+    )
   )
   if (is.null(contract)) {
-    columns <- dataraft.core::infer_column_types(dplyr::tbl(lake$con, relation))
+    columns <- dataraft.core::dr_internal_infer_column_types(dplyr::tbl(
+      lake$con,
+      relation
+    ))
     contract <- dataraft.core::dr_contract(
       paste0(asset, ".dbt_schema"),
       version = paste0(
         "auto-",
-        dataraft.core::fingerprint(list(
+        fingerprint(list(
           columns = columns,
           required = character(),
           allow_empty = TRUE
@@ -193,41 +199,41 @@ dr_dbt_publish <- function(
   if (is.null(version)) {
     definition$version <- paste0(
       "auto-",
-      dataraft.core::fingerprint(definition)
+      fingerprint(definition)
     )
   }
   dataraft.lake::dr_register(lake, contract)
   dataraft.lake::dr_register(lake, definition)
-  dh <- dataraft.core::fingerprint(definition)
-  run <- dataraft.lake::new_run(
+  dh <- fingerprint(definition)
+  run <- dataraft.lake::dr_internal_new_run(
     lake,
     paste0(asset, ".dbt_publish"),
     asset,
     dh,
     code_version
   )
-  started <- dataraft.core::now()
+  started <- now()
   output_rows <- NULL
   output_schema <- NULL
   candidate <- NULL
   out <- tryCatch(
     {
-      ih <- dataraft.core::fingerprint(list(
+      ih <- fingerprint(list(
         invocation = invocation,
         model = model,
         snapshot = run,
         business_date = as.character(business_date)
       ))
-      dataraft.lake::exec(
+      dataraft.lake::dr_internal_exec(
         lake,
         paste(
           "UPDATE",
-          dataraft.lake::meta(lake, "runs"),
+          dataraft.lake::dr_internal_meta(lake, "runs"),
           "SET input_hash = ? WHERE run_id = ?"
         ),
         list(ih, run)
       )
-      dataraft.lake::insert_meta(
+      dataraft.lake::dr_internal_insert_meta(
         lake,
         "inputs",
         list(
@@ -237,12 +243,12 @@ dr_dbt_publish <- function(
           fingerprint = ih,
           original_name = "",
           landed_path = "",
-          received_at = dataraft.core::now(),
+          received_at = now(),
           business_date = as.character(business_date)
         )
       )
       pub <- list(asset = asset, mode = "replace", layer = layer)
-      candidate <- dataraft.lake::compose_candidate(
+      candidate <- dataraft.lake::dr_internal_compose_candidate(
         lake,
         dplyr::tbl(lake$con, relation),
         pub,
@@ -252,15 +258,15 @@ dr_dbt_publish <- function(
       dbt_quality <- dataraft.core::dr_quality(result)
       dbt_quality$failure_rate <- NULL
       quality <- dplyr::bind_rows(dbt_quality, quality)
-      dataraft.lake::persist_quality(lake, run, contract, quality)
-      if (!dataraft.core::quality_ok(quality)) {
-        dataraft.lake::finish_run(
+      dataraft.lake::dr_internal_persist_quality(lake, run, contract, quality)
+      if (!dataraft.core::dr_internal_quality_ok(quality)) {
+        dataraft.lake::dr_internal_finish_run(
           lake,
           run,
           "blocked",
           "dbt snapshot failed the publication contract."
         )
-        dataraft.lake::emit_event(
+        dataraft.lake::dr_internal_emit_event(
           lake,
           run,
           asset,
@@ -269,11 +275,13 @@ dr_dbt_publish <- function(
           "dbt snapshot publication blocked; inspect quality_results.",
           notify
         )
-        dataraft.core::run_result(run, "blocked", quality = quality)
+        dataraft.core::dr_internal_run_result(run, "blocked", quality = quality)
       } else {
-        output_rows <- dataraft.core::count_rows(candidate$data)
-        output_schema <- dataraft.core::infer_column_types(candidate$data)
-        dataraft.lake::publish_candidate(
+        output_rows <- count_rows(candidate$data)
+        output_schema <- dataraft.core::dr_internal_infer_column_types(
+          candidate$data
+        )
+        dataraft.lake::dr_internal_publish_candidate(
           lake,
           run,
           pub,
@@ -288,13 +296,13 @@ dr_dbt_publish <- function(
       }
     },
     error = function(e) {
-      dataraft.lake::finish_run(
+      dataraft.lake::dr_internal_finish_run(
         lake,
         run,
         "error",
         "dbt snapshot publication failed."
       )
-      dataraft.lake::emit_event(
+      dataraft.lake::dr_internal_emit_event(
         lake,
         run,
         asset,
@@ -303,7 +311,7 @@ dr_dbt_publish <- function(
         "dbt snapshot publication failed; inspect the local error condition.",
         notify
       )
-      x <- dataraft.core::run_result(run, "error")
+      x <- dataraft.core::dr_internal_run_result(run, "error")
       x$error <- e
       x
     }
@@ -314,7 +322,7 @@ dr_dbt_publish <- function(
     out$output_lake <- lake
   }
   out$started_at <- started
-  out$finished_at <- dataraft.core::now()
+  out$finished_at <- now()
   out$backend <- lake$config$backend
   out$inputs <- list(
     model = model,
@@ -327,7 +335,7 @@ dr_dbt_publish <- function(
     invocation_id = invocation,
     code_version = code_version,
     version = definition$version,
-    contract = dataraft.core::canonical(contract),
+    contract = canonical(contract),
     schema = output_schema,
     rows = output_rows
   )
@@ -342,7 +350,7 @@ dr_dbt_publish <- function(
     )
   }
   if (stop_on_failure && !out$status %in% c("published", "cached")) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "dbt snapshot publication failed; metadata persisted.",
       "dr_run_failed",
@@ -357,7 +365,7 @@ dr_dbt_publish <- function(
 dbt_publication_model <- function(manifest, model) {
   rlang::local_error_call(rlang::caller_env())
   if (!is.list(manifest$nodes) || is.null(names(manifest$nodes))) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The dbt result has no named manifest nodes.",
       "dr_dbt_invalid"
@@ -375,7 +383,7 @@ dbt_publication_model <- function(manifest, model) {
     logical(1)
   )]
   if (length(matches) != 1L) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Use an exact dbt unique ID or an unambiguous materialized node name.",
       "dr_dbt_invalid"
@@ -415,7 +423,7 @@ dbt_publication_code <- function(manifest) {
   definitions$adapter_type <- manifest$metadata$adapter_type
   paste0(
     "dbt-",
-    dataraft.core::fingerprint(dbt_publication_canonical(definitions))
+    fingerprint(dbt_publication_canonical(definitions))
   )
 }
 
@@ -454,14 +462,14 @@ dr_publish.dr_dbt_result <- function(
   ...
 ) {
   if (!is.null(execution)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Execution defaults apply to R products. Configure dbt through its project and publication arguments."
     )
   }
-  dataraft.core::scalar(name, "model name")
+  dataraft.core::dr_internal_scalar(name, "model name")
   if (!isTRUE(x$success) || !identical(x$command, "build")) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Publication requires a successful dbt build result.",
       "dr_dbt_invalid"
@@ -470,7 +478,7 @@ dr_publish.dr_dbt_result <- function(
   config <- x$project$lake %||% x$project$source_config
   lake <- to %||% config
   if (is.null(lake)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "An externally configured dbt project needs dr_publish(..., to = dr_lake_config(...)).",
       "dr_dbt_invalid"
@@ -482,7 +490,7 @@ dr_publish.dr_dbt_result <- function(
   if (
     !is.null(expected) && !identical(dbt_catalog_fingerprint(actual), expected)
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Publish to the same lake catalog used by this dbt build.",
       "dr_dbt_invalid"
@@ -501,7 +509,7 @@ dbt_verified_result <- function(result) {
     !identical(parsed$manifest, result$manifest) ||
       !identical(parsed$results, result$results)
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The dbt result changed after execution; use the original build result.",
       "dr_dbt_artifact_invalid"

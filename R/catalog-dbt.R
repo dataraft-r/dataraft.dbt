@@ -3,7 +3,6 @@
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name dbt_catalog_warning
 
 dbt_catalog_warning <- function(delivery) {
@@ -38,7 +37,6 @@ dbt_artifact_hashes <- function(path) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name dbt_catalog_artifacts
 
 dbt_catalog_artifacts <- function(result, path = result$artifacts_dir) {
@@ -52,7 +50,7 @@ dbt_catalog_artifacts <- function(result, path = result$artifacts_dir) {
           names(result$artifact_hashes)
       )
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The result has no verified dbt artifact identity.",
       "dr_dbt_artifact_invalid"
@@ -63,7 +61,7 @@ dbt_catalog_artifacts <- function(result, path = result$artifacts_dir) {
     !identical(parsed$manifest$metadata$invocation_id, result$invocation_id) ||
       !identical(dbt_artifact_hashes(path), result$artifact_hashes)
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The dbt artifacts changed after execution.",
       "dr_dbt_artifact_invalid"
@@ -75,7 +73,7 @@ dbt_catalog_artifacts <- function(result, path = result$artifacts_dir) {
       !is.list(catalog$nodes) ||
         !identical(catalog$metadata$invocation_id, result$invocation_id)
     ) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         "catalog.json must belong to the same dbt invocation.",
         "dr_dbt_artifact_invalid"
