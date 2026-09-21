@@ -121,7 +121,7 @@ test_that("automatic versions track definitions but ignore invocation timestamps
   repeated <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue")
   expect_identical(repeated$metadata$code_version, first$metadata$code_version)
   expect_identical(repeated$metadata$version, first$metadata$version)
-  f$dbt$manifest$nodes[["model.shop.customer_revenue"]]$compiled_code <-
+  f$dbt$manifest$nodes[["model.shop.customer_revenue"]]$raw_code <-
     "SELECT customer_id, revenue FROM a_changed_input"
   f$dbt <- dbt_publication_new_artifacts(f$dbt)
   changed <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue")

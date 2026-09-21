@@ -402,7 +402,6 @@ dbt_publication_code <- function(manifest) {
     "package_name",
     "checksum",
     "raw_code",
-    "compiled_code",
     "macro_sql",
     "config",
     "depends_on",

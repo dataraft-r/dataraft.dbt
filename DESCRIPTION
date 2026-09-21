@@ -7,11 +7,11 @@ Description: Run dbt projects and publish their checked outputs as data products
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends: R (>= 4.2.0)
-Imports: DBI, dataraft.core, dataraft.lake, digest, dplyr (>= 1.1.0), jsonlite, rlang, tibble
-Suggests: bit64, dataraft.adapters, dataraft.catalog, dm, duckdb (>= 1.5.5), processx, testthat (>= 3.2.0), withr, yaml
+Imports: codetools, DBI, dataraft.core (>= 0.1.0.9000), dataraft.lake (>= 0.1.0.9000), digest, dplyr (>= 1.1.0), jsonlite, rlang, tibble
+Suggests: bit64, dataraft.adapters (>= 0.1.0.9000), dataraft.catalog (>= 0.1.0.9000), dm, duckdb (>= 1.5.5), processx, testthat (>= 3.2.0), withr, yaml
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
-Remotes: dataraft-r/dataraft.adapters, dataraft-r/dataraft.catalog, dataraft-r/dataraft.core, dataraft-r/dataraft.lake
+Remotes: dataraft-r/dataraft.adapters@68c4543dbda3168bbbd9e9ddaa4d9582183d0b28, dataraft-r/dataraft.catalog@79f262a5e534a805edcba38624c7a683c800910e, dataraft-r/dataraft.core@bdbc4f793f95784dfdc8ba026b723da88a0a3643, dataraft-r/dataraft.lake@b748a7eea40f204b2f0497f369e12303e8141255
 URL: https://github.com/dataraft-r/dataraft.dbt
 BugReports: https://github.com/dataraft-r/dataraft.dbt/issues
