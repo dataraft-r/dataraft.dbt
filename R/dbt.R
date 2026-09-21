@@ -34,14 +34,14 @@ dr_dbt_project <- function(
   lake = NULL,
   sources = NULL
 ) {
-  dataraft.core::scalar(executable, "executable")
+  dataraft.core::dr_internal_scalar(executable, "executable")
   if (!is.null(target)) {
-    dataraft.core::scalar(target, "target")
+    dataraft.core::dr_internal_scalar(target, "target")
   }
   if (!is.null(lake)) {
     dbt_managed_config(lake)
     if (!is.null(profiles_dir)) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         "Choose lake for a managed profile or profiles_dir for an external profile, not both.",
         "dr_dbt_invalid"
@@ -50,11 +50,11 @@ dr_dbt_project <- function(
   }
   project <- structure(
     list(
-      path = dataraft.core::absolute_path(path),
+      path = dataraft.core::dr_internal_absolute_path(path),
       profiles_dir = if (is.null(profiles_dir)) {
         NULL
       } else {
-        dataraft.core::absolute_path(profiles_dir)
+        dataraft.core::dr_internal_absolute_path(profiles_dir)
       },
       target = target,
       executable = executable,
@@ -65,7 +65,7 @@ dr_dbt_project <- function(
   )
   if (!is.null(sources)) {
     if (is.null(lake)) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         "Constructor sources require lake. For an external project use dr_dbt_sources() explicitly.",
         "dr_dbt_invalid"
@@ -186,19 +186,22 @@ dr_execute.dr_dbt_project <- function(
   ...
 ) {
   if (!is.null(execution)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Execution defaults apply to R products. Configure dbt through its project."
     )
   }
   if (!is.null(lake)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "dbt opens its own connections; omit lake.",
       "dr_dbt_invalid"
     )
   }
-  object <- dataraft.core::replace_execution_sources(object, sources = sources)
+  object <- dataraft.core::dr_internal_replace_execution_sources(
+    object,
+    sources = sources
+  )
   dr_dbt_build(object, ...)
 }
 
@@ -215,7 +218,7 @@ dbt_selection <- function(value, name) {
       any(!nzchar(trimws(value))) ||
       any(startsWith(trimws(value), "-"))
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       paste(name, "must contain non-empty dbt selectors, not CLI flags."),
       "dr_dbt_invalid"
@@ -259,15 +262,15 @@ dbt_run <- function(
 ) {
   rlang::local_error_call(rlang::caller_env())
   if (!inherits(project, "dr_dbt_project")) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Use dr_dbt_project() first.",
       "dr_dbt_invalid"
     )
   }
-  dataraft.core::flag(full_refresh, "full_refresh")
-  dataraft.core::flag(echo, "echo")
-  dataraft.core::flag(stop_on_failure, "stop_on_failure")
+  dataraft.core::dr_internal_flag(full_refresh, "full_refresh")
+  dataraft.core::dr_internal_flag(echo, "echo")
+  dataraft.core::dr_internal_flag(stop_on_failure, "stop_on_failure")
   dbt_check_catalog(catalog)
   if (
     !is.numeric(timeout) ||
@@ -275,7 +278,7 @@ dbt_run <- function(
       is.na(timeout) ||
       timeout <= 0
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "timeout must be a positive number of seconds or Inf.",
       "dr_dbt_invalid"
@@ -289,7 +292,7 @@ dbt_run <- function(
           any(!nzchar(names(vars))) ||
           anyDuplicated(names(vars))))
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "vars must be a named list with unique non-empty names.",
       "dr_dbt_invalid"
@@ -300,16 +303,16 @@ dbt_run <- function(
     dbt_selection(exclude, "exclude")
   )
   if (!file.exists(file.path(project$path, "dbt_project.yml"))) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "No dbt_project.yml found. Use dr_dbt_init() or supply an existing project.",
       "dr_dbt_invalid"
     )
   }
-  dataraft.core::need("processx")
+  dataraft.core::dr_internal_need("processx")
   executable <- Sys.which(project$executable)
   if (!nzchar(executable) && !file.exists(project$executable)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "dbt executable not found. Install dbt and set executable to its path.",
       "dr_dbt_unavailable"
@@ -318,7 +321,7 @@ dbt_run <- function(
   executable <- if (nzchar(executable)) {
     unname(executable)
   } else {
-    dataraft.core::absolute_path(project$executable)
+    dataraft.core::dr_internal_absolute_path(project$executable)
   }
   prepared <- dbt_prepare_managed(project)
   if (!is.null(prepared) && !length(project$source_groups)) {
@@ -331,10 +334,10 @@ dbt_run <- function(
     project$path,
     ".dataraft",
     "runs",
-    dataraft.core::uid()
+    dataraft.core::dr_internal_uid()
   )
   if (!dir.create(artifacts, recursive = TRUE)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Could not create the dbt artifact directory.",
       "dr_dbt_io"
@@ -378,7 +381,7 @@ dbt_run <- function(
   process <- tryCatch(
     dbt_process(executable, args, project$path, echo, timeout),
     error = function(e) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         "dbt could not complete. Check the executable, timeout and project logs.",
         "dr_dbt_process_error",
@@ -422,7 +425,7 @@ dbt_run <- function(
     result$catalog_delivery <- dbt_deliver_metadata(catalog, result)
   }
   if (stop_on_failure && !result$success) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "dbt execution failed. Inspect condition$result or use stop_on_failure = FALSE.",
       "dr_dbt_failed",
@@ -439,11 +442,14 @@ dbt_check_catalog <- function(catalog) {
     return(invisible(catalog))
   }
   if (
-    !dataraft.core::component_method("dr_publish_metadata", catalog) ||
+    !dataraft.core::dr_internal_component_method(
+      "dr_publish_metadata",
+      catalog
+    ) ||
       !"dr_dbt_result" %in%
         dataraft.core::dr_capabilities(catalog)$metadata_inputs
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "catalog must be a function or a dr_publish_metadata() adapter declaring metadata_inputs = 'dr_dbt_result' in dr_capabilities().",
       "dr_dbt_invalid"
@@ -464,7 +470,7 @@ dbt_deliver_metadata <- function(catalog, result) {
     },
     invocation_id = result$invocation_id,
     attempt = 1L,
-    started_at = dataraft.core::now(),
+    started_at = now(),
     finished_at = NULL,
     exit_status = NULL,
     error_class = NULL,
@@ -498,7 +504,7 @@ dbt_deliver_metadata <- function(catalog, result) {
       delivery$status <- "delivered"
     }
   }
-  delivery$finished_at <- dataraft.core::now()
+  delivery$finished_at <- now()
   if (delivery$status != "delivered") {
     dbt_catalog_warning(delivery)
   }
@@ -521,7 +527,7 @@ dbt_empty_results <- function() {
 dbt_read_json <- function(path) {
   rlang::local_error_call(rlang::caller_env())
   if (!file.exists(path)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       paste("Missing dbt artifact:", basename(path)),
       "dr_dbt_artifact_invalid"
@@ -530,7 +536,7 @@ dbt_read_json <- function(path) {
   tryCatch(
     jsonlite::read_json(path, simplifyVector = FALSE),
     error = function(e) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         paste("Invalid dbt JSON:", basename(path)),
         "dr_dbt_artifact_invalid"
@@ -545,7 +551,7 @@ dbt_read_artifacts <- function(path) {
   runs <- dbt_read_json(file.path(path, "run_results.json"))
   manifest <- dbt_read_manifest(path)
   if (!is.list(runs) || is.null(runs$metadata) || !is.list(runs$results)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "run_results.json must contain metadata and a results array.",
       "dr_dbt_artifact_invalid"
@@ -560,7 +566,7 @@ dbt_read_artifacts <- function(path) {
       !nzchar(run_id) ||
       !identical(run_id, manifest_id)
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "dbt artifacts must belong to the same invocation.",
       "dr_dbt_artifact_invalid"
@@ -574,7 +580,7 @@ dbt_read_artifacts <- function(path) {
         !is.character(node$status) ||
         length(node$status) != 1L
     ) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         "A dbt result is missing unique_id or status.",
         "dr_dbt_artifact_invalid"
@@ -586,7 +592,7 @@ dbt_read_artifacts <- function(path) {
         (length(value) == 1L &&
           if (field == "message") is.character(value) else is.numeric(value))
       if (!valid) {
-        dataraft.core::abort(
+        dataraft.core::dr_internal_abort(
           subclass = "dataraft_error_dbt",
           paste("Invalid scalar dbt result field:", field),
           "dr_dbt_artifact_invalid"
@@ -616,7 +622,7 @@ dbt_read_manifest <- function(path) {
       !is.list(manifest$nodes) ||
       !is.list(manifest$metadata)
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "manifest.json must contain metadata and nodes.",
       "dr_dbt_artifact_invalid"
@@ -644,7 +650,7 @@ dr_dbt_status <- function(x) {
   if (inherits(x, "dr_dbt_result")) {
     return(x$results)
   }
-  dbt_read_artifacts(dataraft.core::absolute_path(x))$results
+  dbt_read_artifacts(dataraft.core::dr_internal_absolute_path(x))$results
 }
 
 
@@ -699,7 +705,7 @@ dbt_manifest <- function(x) {
   rlang::local_error_call(rlang::caller_env())
   if (inherits(x, "dr_dbt_result")) {
     if (is.null(x$manifest)) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         "This dbt result has no valid manifest.",
         "dr_dbt_artifact_invalid"
@@ -707,7 +713,7 @@ dbt_manifest <- function(x) {
     }
     return(x$manifest)
   }
-  dbt_read_manifest(dataraft.core::absolute_path(x))
+  dbt_read_manifest(dataraft.core::dr_internal_absolute_path(x))
 }
 
 
@@ -749,10 +755,10 @@ dr_dbt_model <- function(
   foreign_keys = list(),
   check = TRUE
 ) {
-  dataraft.lake::assert_lake(lake)
-  dataraft.core::need("dm")
-  dataraft.core::scalar(database, "database")
-  dataraft.core::flag(check, "check")
+  dataraft.lake::dr_internal_assert_lake(lake)
+  dataraft.core::dr_internal_need("dm")
+  dataraft.core::dr_internal_scalar(database, "database")
+  dataraft.core::dr_internal_flag(check, "check")
   manifest <- dbt_manifest(x)
   available <- Filter(
     function(node) {
@@ -778,7 +784,7 @@ dr_dbt_model <- function(
       anyDuplicated(names(tables)) ||
       !all(tables %in% names(available))
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "tables must map unique R aliases to materialized dbt node IDs.",
       "dr_dbt_invalid"
@@ -786,8 +792,8 @@ dr_dbt_model <- function(
   }
   relations <- lapply(tables, function(id) {
     node <- available[[id]]
-    schema <- dataraft.core::scalar(node$schema, "dbt schema")
-    table <- dataraft.core::scalar(
+    schema <- dataraft.core::dr_internal_scalar(node$schema, "dbt schema")
+    table <- dataraft.core::dr_internal_scalar(
       node$alias %||% node$name,
       "dbt relation name"
     )
@@ -796,7 +802,7 @@ dr_dbt_model <- function(
       DBI::Id(catalog = database, schema = schema, table = table)
     )
   })
-  model <- dataraft.core::dm_keys(
+  model <- dataraft.core::dr_internal_dm_keys(
     dm::dm(!!!relations),
     primary_keys,
     foreign_keys,

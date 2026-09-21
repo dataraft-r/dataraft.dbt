@@ -51,14 +51,14 @@ dr_dbt_init <- function(
   executable = "dbt",
   sources = NULL
 ) {
-  dataraft.core::need("yaml")
-  dataraft.core::ident(name)
+  dataraft.core::dr_internal_need("yaml")
+  dataraft.core::dr_internal_ident(name)
   if (
     !inherits(config, "dr_config") ||
       config$catalog$type != "duckdb" ||
       config$storage$type != "local"
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The starter requires dr_lake_config() with local catalog and storage.",
       "dr_dbt_invalid"
@@ -76,14 +76,14 @@ dr_dbt_init <- function(
   } else {
     binding <- dbt_source_binding(sources)
     if (!identical(binding$database, "lake")) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         "The starter profile attaches RAW releases under database lake.",
         "dr_dbt_invalid"
       )
     }
     if (!"orders" %in% names(sources)) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         "The order starter needs sources = list(orders = accepted_raw). Use dr_dbt_sources() for a general project.",
         "dr_dbt_invalid"
@@ -103,14 +103,14 @@ dr_dbt_init <- function(
           any(!nzchar(names(schema))) ||
           anyDuplicated(names(schema))
       ) {
-        dataraft.core::abort(
+        dataraft.core::dr_internal_abort(
           subclass = "dataraft_error_dbt",
           "The starter needs recorded column types on every accepted RAW result.",
           "dr_dbt_invalid"
         )
       }
       if (any(grepl("\\{\\{|\\{%|\\{#", names(schema)))) {
-        dataraft.core::abort(
+        dataraft.core::dr_internal_abort(
           subclass = "dataraft_error_dbt",
           "Rename source columns containing dbt template delimiters before using the starter.",
           "dr_dbt_invalid"
@@ -124,7 +124,7 @@ dr_dbt_init <- function(
         !types$orders[["amount"]] %in%
           c("character", "integer", "numeric", "integer64")
     ) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         "The order starter requires order_id, customer_id and amount as numbers or numeric strings. Use dr_dbt_sources() for other schemas.",
         "dr_dbt_invalid"
@@ -142,7 +142,7 @@ dr_dbt_init <- function(
         logical(1)
       ))
     ) {
-      dataraft.core::abort(
+      dataraft.core::dr_internal_abort(
         subclass = "dataraft_error_dbt",
         "Starter RAW sources must belong to config's catalog.",
         "dr_dbt_invalid"
@@ -151,9 +151,9 @@ dr_dbt_init <- function(
     types$orders[["amount"]] <- "numeric"
     types
   }
-  path <- dataraft.core::absolute_path(path)
+  path <- dataraft.core::dr_internal_absolute_path(path)
   if (file.exists(path) && !dir.exists(path)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "path is a file.",
       "dr_dbt_invalid"
@@ -162,7 +162,7 @@ dr_dbt_init <- function(
   if (
     dir.exists(path) && length(list.files(path, all.files = TRUE, no.. = TRUE))
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Choose a new or empty directory; existing files are never overwritten.",
       "dr_dbt_invalid"
@@ -351,21 +351,21 @@ dbt_starter_schemas <- function(config, sourced) {
     schemas[mapped] <- unname(config$layers[mapped])
   }
   if (!identical(schemas[["raw"]], "raw")) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The ingestion schema must be raw.",
       "dr_dbt_invalid"
     )
   }
   if (sourced && !all(schemas %in% config$layers)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Configure raw, staging, core and marts layers before creating a RAW-source starter.",
       "dr_dbt_invalid"
     )
   }
   if (anyDuplicated(schemas)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The four dbt starter layers need distinct schema names.",
       "dr_dbt_invalid"

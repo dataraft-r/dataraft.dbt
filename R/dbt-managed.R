@@ -8,7 +8,7 @@ dbt_managed_config <- function(config) {
       !config$backend %in% c("duckdb", "ducklake") ||
       isTRUE(config$read_only)
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "lake must be a writable local DuckDB or DuckLake configuration. For other dbt adapters, supply profiles_dir instead.",
       "dr_dbt_invalid"
@@ -20,13 +20,13 @@ dbt_managed_config <- function(config) {
 
 dbt_project_yaml <- function(project) {
   rlang::local_error_call(rlang::caller_env())
-  dataraft.core::need("yaml")
+  dataraft.core::dr_internal_need("yaml")
   spec <- tryCatch(
     yaml::read_yaml(file.path(project$path, "dbt_project.yml")),
     error = identity
   )
   if (!is.list(spec) || inherits(spec, "error")) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Cannot read dbt_project.yml as a YAML mapping.",
       "dr_dbt_invalid"
@@ -46,7 +46,7 @@ dbt_models_directory <- function(project, spec = dbt_project_yaml(project)) {
       any(!nzchar(paths)) ||
       any(grepl("\\{\\{|\\{%", paths))
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Managed source YAML needs a literal model-paths directory in dbt_project.yml.",
       "dr_dbt_invalid"
@@ -54,15 +54,18 @@ dbt_models_directory <- function(project, spec = dbt_project_yaml(project)) {
   }
   path <- paths[[1L]]
   if (grepl("^(/|[A-Za-z]:|\\\\)|(^|[/\\\\])\\.\\.([/\\\\]|$)", path)) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Managed source YAML must stay inside the project directory.",
       "dr_dbt_invalid"
     )
   }
-  directory <- dataraft.core::absolute_path(file.path(project$path, path))
+  directory <- dataraft.core::dr_internal_absolute_path(file.path(
+    project$path,
+    path
+  ))
   if (!startsWith(paste0(directory, "/"), paste0(project$path, "/"))) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Managed source YAML must stay inside the project directory.",
       "dr_dbt_invalid"
@@ -106,7 +109,7 @@ dbt_prepare_managed <- function(project) {
       is.na(profile) ||
       !grepl("^[A-Za-z_][A-Za-z0-9_-]*$", profile)
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "A managed project needs a literal profile name in dbt_project.yml.",
       "dr_dbt_invalid"
@@ -135,7 +138,7 @@ dbt_prepare_managed <- function(project) {
     file.exists(destination) &&
       !identical(readLines(destination, n = 1L, warn = FALSE), marker)
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "The managed source YAML is not package-owned; move or rename that file before running.",
       "dr_dbt_invalid"
@@ -184,7 +187,7 @@ dbt_write_managed <- function(prepared, artifacts) {
     !dir.exists(directory) &&
       !dir.create(directory, recursive = TRUE, showWarnings = FALSE)
   ) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Cannot create the managed dbt source directory.",
       "dr_dbt_io"
@@ -194,7 +197,7 @@ dbt_write_managed <- function(prepared, artifacts) {
   on.exit(unlink(temporary), add = TRUE)
   writeLines(prepared$source_yaml, temporary, useBytes = TRUE)
   if (!suppressWarnings(file.rename(temporary, prepared$destination))) {
-    dataraft.core::abort(
+    dataraft.core::dr_internal_abort(
       subclass = "dataraft_error_dbt",
       "Cannot replace the managed dbt source YAML; the previous file was preserved.",
       "dr_dbt_io"

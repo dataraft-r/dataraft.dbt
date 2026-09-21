@@ -2,21 +2,16 @@ Package: dataraft.dbt
 Title: Dbt Components for DataRaft
 Version: 0.1.0.9000
 Authors@R: person("Jan-Hendrik", "Weinert", role = c("aut", "cre"), email = "65009403+JanWein@users.noreply.github.com")
-Description: Independently installable dbt components for modular checked data
-    products. Part of DataRaft, with explicit source, transformation, quality,
-    target and metadata interfaces.
+Description: Run dbt projects and publish their checked outputs as data products.
+    Builds on dataraft.core and dataraft.lake; the dbt CLI is installed separately.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends: R (>= 4.2.0)
 Imports: DBI, dataraft.core, dataraft.lake, digest, dplyr (>= 1.1.0), jsonlite, rlang, tibble
-Suggests: dataraft, dataraft.adapters, dataraft.catalog, dm, duckdb (>= 1.5.5), processx, testthat (>= 3.2.0), withr, yaml
+Suggests: bit64, dataraft.adapters, dataraft.catalog, dm, duckdb (>= 1.5.5), processx, testthat (>= 3.2.0), withr, yaml
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
-Remotes: dataraft-r/dataraft.core,
-    dataraft-r/dataraft.lake,
-    dataraft-r/dataraft.adapters,
-    dataraft-r/dataraft.catalog,
-    dataraft-r/dataraft
+Remotes: dataraft-r/dataraft.adapters, dataraft-r/dataraft.catalog, dataraft-r/dataraft.core, dataraft-r/dataraft.lake
 URL: https://github.com/dataraft-r/dataraft.dbt
 BugReports: https://github.com/dataraft-r/dataraft.dbt/issues
