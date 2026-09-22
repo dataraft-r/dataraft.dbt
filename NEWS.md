@@ -7,3 +7,5 @@
 * Move contract-to-dbt schema regression tests into the independently checked component.
 
 * Initial independent DataRaft package.
+
+* Diagnostic providers now implement public S3 methods; status, quality and lineage no longer require reverse calls from core into extension packages.
