@@ -1,17 +1,17 @@
 Package: dataraft.dbt
 Title: Dbt Components for DataRaft
-Version: 0.1.0.9000
+Version: 0.1.0.9001
 Authors@R: person("Jan-Hendrik", "Weinert", role = c("aut", "cre"), email = "65009403+JanWein@users.noreply.github.com")
 Description: Run dbt projects and publish their checked outputs as data products.
     Builds on dataraft.core and dataraft.lake; the dbt CLI is installed separately.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends: R (>= 4.2.0)
-Imports: codetools, DBI, dataraft.core (>= 0.1.0.9000), dataraft.lake (>= 0.1.0.9000), digest, dplyr (>= 1.1.0), jsonlite, rlang, tibble
+Imports: codetools, DBI, dataraft.core (>= 0.1.0.9002), dataraft.lake (>= 0.1.0.9001), digest, dplyr (>= 1.1.0), jsonlite, rlang, tibble
 Suggests: bit64, dataraft.adapters (>= 0.1.0.9000), dataraft.catalog (>= 0.1.0.9000), dm, duckdb (>= 1.5.5), processx, testthat (>= 3.2.0), withr, yaml
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
-Remotes: dataraft-r/dataraft.adapters@4b1ba10c2906979eeeb6db4fda14a8472aedc361, dataraft-r/dataraft.catalog@4ac44dca2ca3fd55e9d689c43aba5f512aa61f80, dataraft-r/dataraft.core@5a7bb6953ef7d79217c43facd399087b97f3c755, dataraft-r/dataraft.lake@6759c2cb16592a344683c07c6ca2830c80dd79e8
+Remotes: dataraft-r/dataraft.adapters@4b1ba10c2906979eeeb6db4fda14a8472aedc361, dataraft-r/dataraft.catalog@4ac44dca2ca3fd55e9d689c43aba5f512aa61f80, dataraft-r/dataraft.core@d7841ea0e8913db630a268655cbc1fa56cfff408, dataraft-r/dataraft.lake@50fdc0d010172d84eee82b751eeaf2ade4b0fa5f
 URL: https://github.com/dataraft-r/dataraft.dbt
 BugReports: https://github.com/dataraft-r/dataraft.dbt/issues

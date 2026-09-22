@@ -210,10 +210,6 @@ dr_dbt_init <- function(
   if (is.null(sources)) {
     definition$`seed-paths` <- list("seeds")
     definition$seeds <- stats::setNames(list(list(`+schema` = "raw")), name)
-    writeLines(
-      c("order_id,customer_id,amount", "1,101,25", "2,101,75", "3,102,50"),
-      file.path(path, "seeds", "raw_orders.csv")
-    )
   } else {
     definition$`seed-paths` <- list()
   }
@@ -236,61 +232,7 @@ dr_dbt_init <- function(
       file.path(path, "models", "staging", paste0("stg_", source_name, ".sql"))
     )
   }
-  writeLines(
-    c(
-      "select order_id, customer_id, amount as order_amount,",
-      "  amount > 0 as is_positive_order",
-      "from {{ ref('stg_orders') }}"
-    ),
-    file.path(path, "models", "core", "core_orders.sql")
-  )
-  writeLines(
-    c(
-      "select customer_id, sum(order_amount) as revenue",
-      "from {{ ref('core_orders') }}",
-      "group by customer_id"
-    ),
-    file.path(path, "models", "marts", "customer_revenue.sql")
-  )
-  yaml::write_yaml(
-    list(
-      version = 2L,
-      models = list(
-        list(
-          name = "stg_orders",
-          description = "One row per order, with explicit source types.",
-          columns = list(
-            list(name = "order_id", tests = list("unique", "not_null")),
-            list(name = "customer_id", tests = list("not_null"))
-          )
-        ),
-        list(
-          name = "core_orders",
-          description = "Order amounts and a reusable positive-order flag.",
-          columns = list(list(
-            name = "order_id",
-            tests = list("unique", "not_null")
-          ))
-        ),
-        list(
-          name = "customer_revenue",
-          description = "Revenue by customer.",
-          columns = list(
-            list(name = "customer_id", tests = list("unique", "not_null"))
-          )
-        )
-      )
-    ),
-    file.path(path, "models", "schema.yml")
-  )
-  writeLines(
-    c(
-      "{% macro generate_schema_name(custom_schema_name, node) -%}",
-      "  {{ custom_schema_name | trim if custom_schema_name else target.schema }}",
-      "{%- endmacro %}"
-    ),
-    file.path(path, "macros", "generate_schema_name.sql")
-  )
+  dbt_copy_starter_templates(path, seeds = is.null(sources))
   writeLines(
     c(
       ".dataraft/",
@@ -372,4 +314,34 @@ dbt_starter_schemas <- function(config, sourced) {
     )
   }
   schemas
+}
+
+
+dbt_copy_starter_templates <- function(path, seeds) {
+  root <- system.file("templates", "orders", package = "dataraft.dbt")
+  files <- c(
+    "models/core/core_orders.sql",
+    "models/marts/customer_revenue.sql",
+    "models/schema.yml",
+    "macros/generate_schema_name.sql"
+  )
+  if (seeds) {
+    files <- c(files, "seeds/raw_orders.csv")
+  }
+  if (!nzchar(root) || !all(file.exists(file.path(root, files)))) {
+    dataraft.core::dr_internal_abort(
+      subclass = "dataraft_error_dbt",
+      "The installed order starter templates are incomplete.",
+      "dr_dbt_invalid"
+    )
+  }
+  copied <- file.copy(file.path(root, files), file.path(path, files))
+  if (!all(copied)) {
+    dataraft.core::dr_internal_abort(
+      subclass = "dataraft_error_dbt",
+      "Could not copy all order starter templates to the project.",
+      "dr_dbt_invalid"
+    )
+  }
+  invisible(path)
 }

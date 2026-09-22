@@ -36,6 +36,38 @@ test_that("starter refuses to overwrite existing files", {
   expect_equal(readLines(file.path(root, "important.txt")), "keep")
 })
 
+test_that("starter ships and copies the order example as editable templates", {
+  skip_if_not_installed("yaml")
+  root <- withr::local_tempdir()
+  config <- dr_lake_config(
+    dr_registry_duckdb(file.path(root, "lake.db")),
+    dr_storage_local(file.path(root, "data")),
+    backend = "duckdb"
+  )
+  project <- dr_dbt_init(file.path(root, "dbt"), config)
+  templates <- system.file("templates", "orders", package = "dataraft.dbt")
+  expected <- c(
+    "models/core/core_orders.sql", "models/marts/customer_revenue.sql",
+    "models/schema.yml", "macros/generate_schema_name.sql",
+    "seeds/raw_orders.csv"
+  )
+  expect_true(nzchar(templates))
+  expect_setequal(list.files(templates, recursive = TRUE), expected)
+  for (file in expected) {
+    expect_identical(
+      readLines(file.path(project$path, file)),
+      readLines(file.path(templates, file)),
+      info = file
+    )
+  }
+  schema <- yaml::read_yaml(file.path(project$path, "models/schema.yml"))
+  expect_equal(schema$version, 2)
+  expect_equal(
+    vapply(schema$models, `[[`, character(1), "name"),
+    c("stg_orders", "core_orders", "customer_revenue")
+  )
+})
+
 test_that("real dbt builds and tests the starter project", {
   executable <- Sys.getenv("DATARAFT_DBT_EXECUTABLE")
   skip_if(

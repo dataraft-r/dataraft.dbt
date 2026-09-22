@@ -38,6 +38,10 @@ dbt_publication_fixture <- function(marts = FALSE) {
     ),
     class = "dr_dbt_result"
   )
+  f$contract <- dr_contract(
+    columns = c(customer_id = "integer", revenue = "numeric"),
+    required = character(), allow_empty = TRUE, max_age_hours = NULL
+  )
   f
 }
 
@@ -69,7 +73,7 @@ dbt_publication_new_artifacts <- function(result) {
 test_that("minimal dbt publication returns an exact collectable release", {
   f <- dbt_publication_fixture()
   withr::defer(fixture_cleanup(f))
-  release <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue")
+  release <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue", contract = f$contract)
   expect_identical(release$status, "published")
   expect_identical(release$asset, "customer_revenue")
   expect_true(DBI::dbIsValid(f$lake$con))
@@ -89,7 +93,7 @@ test_that("minimal dbt publication returns an exact collectable release", {
   )
   expect_equal(dr_collect(release)$revenue, 100)
   expect_equal(
-    dr_collect(dr_dbt_publish(f$lake, f$dbt, "customer_revenue"))$revenue,
+    dr_collect(dr_dbt_publish(f$lake, f$dbt, "customer_revenue", contract = f$contract))$revenue,
     200
   )
 })
@@ -99,7 +103,7 @@ test_that("config publication closes owned handles and prefers configured marts"
   withr::defer(fixture_cleanup(f))
   config <- f$lake$config
   dr_disconnect_lake(f$lake)
-  release <- dr_dbt_publish(config, f$dbt, "customer_revenue")
+  release <- dr_dbt_publish(config, f$dbt, "customer_revenue", contract = f$contract)
   expect_null(release$output_lake)
   expect_identical(release$outputs$schema, "marts")
   expect_equal(dr_collect(release)$revenue, 100)
@@ -114,17 +118,17 @@ test_that("config publication closes owned handles and prefers configured marts"
 test_that("automatic versions track definitions but ignore invocation timestamps", {
   f <- dbt_publication_fixture()
   withr::defer(fixture_cleanup(f))
-  first <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue")
+  first <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue", contract = f$contract)
   f$dbt$manifest$metadata$invocation_id <- "another-successful-invocation"
   f$dbt$manifest$metadata$generated_at <- "2026-10-01T00:00:00Z"
   f$dbt <- dbt_publication_new_artifacts(f$dbt)
-  repeated <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue")
+  repeated <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue", contract = f$contract)
   expect_identical(repeated$metadata$code_version, first$metadata$code_version)
   expect_identical(repeated$metadata$version, first$metadata$version)
   f$dbt$manifest$nodes[["model.shop.customer_revenue"]]$raw_code <-
     "SELECT customer_id, revenue FROM a_changed_input"
   f$dbt <- dbt_publication_new_artifacts(f$dbt)
-  changed <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue")
+  changed <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue", contract = f$contract)
   expect_false(identical(
     changed$metadata$code_version,
     first$metadata$code_version
@@ -134,7 +138,11 @@ test_that("automatic versions track definitions but ignore invocation timestamps
     f$lake$con,
     "ALTER TABLE lake.marts.customer_revenue ADD COLUMN currency VARCHAR"
   )
-  evolved <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue")
+  f$contract <- dr_contract(
+    columns = c(customer_id = "integer", revenue = "numeric", currency = "character"),
+    required = character(), allow_empty = TRUE, max_age_hours = NULL
+  )
+  evolved <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue", contract = f$contract)
   expect_false(identical(
     evolved$metadata$contract$version,
     changed$metadata$contract$version
@@ -142,7 +150,7 @@ test_that("automatic versions track definitions but ignore invocation timestamps
   expect_false(identical(evolved$metadata$version, changed$metadata$version))
   DBI::dbExecute(f$lake$con, "DELETE FROM lake.marts.customer_revenue")
   expect_equal(
-    nrow(dr_collect(dr_dbt_publish(f$lake, f$dbt, "customer_revenue"))),
+    nrow(dr_collect(dr_dbt_publish(f$lake, f$dbt, "customer_revenue", contract = f$contract))),
     0L
   )
 })
@@ -150,7 +158,7 @@ test_that("automatic versions track definitions but ignore invocation timestamps
 test_that("invalid invocations and final contracts preserve the consumer release", {
   f <- dbt_publication_fixture()
   withr::defer(fixture_cleanup(f))
-  first <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue")
+  first <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue", contract = f$contract)
   failed <- f$dbt
   failed$success <- FALSE
   expect_error(
@@ -211,4 +219,18 @@ test_that("invalid invocations and final contracts preserve the consumer release
     first$release_id
   )
   expect_true(DBI::dbIsValid(f$lake$con))
+})
+
+
+test_that("dbt publication without a declared contract stays unvalidated", {
+  f <- dbt_publication_fixture()
+  withr::defer(fixture_cleanup(f))
+  result <- dr_dbt_publish(f$lake, f$dbt, "customer_revenue", stop_on_failure = FALSE)
+  expect_identical(result$status, "unvalidated")
+  expect_identical(any(result$quality$status == "unvalidated"), TRUE)
+  expect_identical(nrow(dr_releases(f$lake, "customer_revenue")), 0L)
+  expect_null(result$outputs)
+  runs <- dataraft.lake::dr_registry(f$lake, "runs")
+  expect_identical(runs$status[runs$run_id == result$run_id], "unvalidated")
+  expect_error(dr_dbt_publish(f$lake, f$dbt, "customer_revenue"), class = "dr_run_failed")
 })

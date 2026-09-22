@@ -3,10 +3,11 @@
 #' Requires a successful `dbt build` result containing the selected materialized
 #' node. Copies the relation currently visible to this connection into an
 #' immutable candidate, validates its contract, then commits the release marker.
-#' Omit the contract for structural checks only: column names and R types are
-#' inferred, while empty data and missing values are allowed. Business keys,
+#' Publication requires a declared contract. Without one, inferred columns are
+#' diagnostic metadata only: the run is `unvalidated` and no release is published.
+#' Use `stop_on_failure = FALSE` to inspect that evidence. Business keys,
 #' quality rules, ownership and freshness are never guessed. Later dbt builds
-#' cannot change this snapshot. The dbt invocation is
+#' cannot change a published snapshot. The dbt invocation is
 #' recorded as provenance, not as proof that the live relation has not changed
 #' since that build. Coordinate writers between build and publication.
 #'
@@ -20,7 +21,7 @@
 #' @param model Exact dbt unique ID, such as `"model.shop.customer_revenue"`, or
 #'   an unambiguous node name such as `"customer_revenue"`. Selection expressions
 #'   and ambiguous names are rejected.
-#' @param contract Optional contract for the copied candidate. An unnamed
+#' @param contract Declared contract required for publication. An unnamed
 #'   contract is scoped to the asset, as with [dataraft.core::dr_add_contract()].
 #' @param asset Governed asset ID. Defaults to the selected node's name.
 #' @param code_version Optional explicit code/dependency version. By default,
@@ -40,7 +41,7 @@
 #' @export
 #' @examples
 #' # After dr_dbt_build() and reopening the lake connection:
-#' # release <- dr_dbt_publish(config, result, "customer_revenue")
+#' # release <- dr_dbt_publish(config, result, "customer_revenue", contract = contract)
 #' # dataraft.core::dr_collect(release)
 dr_dbt_publish <- function(
   lake,
@@ -133,6 +134,7 @@ dr_dbt_publish <- function(
     on.exit(dataraft.lake::dr_close_lake(lake), add = TRUE)
   }
   dataraft.lake::dr_internal_assert_writable(lake)
+  dataraft.core::dr_acquire_write_session(lake, scope = environment())
   dataraft.lake::dr_internal_assert_table_asset(lake, asset)
   if (is.null(layer)) {
     layer <- intersect(c("marts", "products"), lake$config$layers)[1L]
@@ -260,11 +262,15 @@ dr_dbt_publish <- function(
       quality <- dplyr::bind_rows(dbt_quality, quality)
       dataraft.lake::dr_internal_persist_quality(lake, run, contract, quality)
       if (!dataraft.core::dr_internal_quality_ok(quality)) {
+        status <- if (any(quality$status == "unvalidated") &&
+          !any(quality$status %in% c("failed", "error", "not_checked"))) {
+          "unvalidated"
+        } else "blocked"
         dataraft.lake::dr_internal_finish_run(
           lake,
           run,
-          "blocked",
-          "dbt snapshot failed the publication contract."
+          status,
+          "dbt snapshot did not satisfy a declared publication contract."
         )
         dataraft.lake::dr_internal_emit_event(
           lake,
@@ -275,7 +281,7 @@ dr_dbt_publish <- function(
           "dbt snapshot publication blocked; inspect quality_results.",
           notify
         )
-        dataraft.core::dr_internal_run_result(run, "blocked", quality = quality)
+        dataraft.core::dr_internal_run_result(run, status, quality = quality)
       } else {
         output_rows <- count_rows(candidate$data)
         output_schema <- dataraft.core::dr_internal_infer_column_types(

@@ -28,7 +28,7 @@ Caller connections stay open; connections opened from a config are closed.}
 an unambiguous node name such as \code{"customer_revenue"}. Selection expressions
 and ambiguous names are rejected.}
 
-\item{contract}{Optional contract for the copied candidate. An unnamed
+\item{contract}{Declared contract required for publication. An unnamed
 contract is scoped to the asset, as with \code{\link[dataraft.core:dr_add_contract]{dataraft.core::dr_add_contract()}}.}
 
 \item{asset}{Governed asset ID. Defaults to the selected node's name.}
@@ -59,10 +59,11 @@ to compose a consumer workflow; a dbt model relation remains mutable.
 Requires a successful \verb{dbt build} result containing the selected materialized
 node. Copies the relation currently visible to this connection into an
 immutable candidate, validates its contract, then commits the release marker.
-Omit the contract for structural checks only: column names and R types are
-inferred, while empty data and missing values are allowed. Business keys,
+Publication requires a declared contract. Without one, inferred columns are
+diagnostic metadata only: the run is \code{unvalidated} and no release is published.
+Use \code{stop_on_failure = FALSE} to inspect that evidence. Business keys,
 quality rules, ownership and freshness are never guessed. Later dbt builds
-cannot change this snapshot. The dbt invocation is
+cannot change a published snapshot. The dbt invocation is
 recorded as provenance, not as proof that the live relation has not changed
 since that build. Coordinate writers between build and publication.
 }
@@ -74,6 +75,6 @@ This publishes one relation, not an atomic bundle of all dbt models.
 }
 \examples{
 # After dr_dbt_build() and reopening the lake connection:
-# release <- dr_dbt_publish(config, result, "customer_revenue")
+# release <- dr_dbt_publish(config, result, "customer_revenue", contract = contract)
 # dataraft.core::dr_collect(release)
 }
