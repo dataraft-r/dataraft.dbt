@@ -173,11 +173,13 @@ dr_dbt_publish <- function(
           allow_empty = TRUE
         ))
       ),
-      columns = columns,
-      required = character(),
-      allow_empty = TRUE,
-      max_age_hours = NULL
-    )
+      columns = columns
+    ) |>
+      dataraft.core::dr_contract_policy(
+        required = character(),
+        allow_empty = TRUE,
+        max_age_hours = NULL
+      )
     contract$automatic_schema <- TRUE
   }
   definition <- list(

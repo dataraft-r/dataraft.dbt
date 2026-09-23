@@ -313,11 +313,8 @@ dr_dbt_contract_from_manifest <- function(x, model, types = NULL) {
       call. = FALSE
     )
   }
-  contract <- dataraft.core::dr_contract(
-    node$name,
-    columns = inferred,
-    required = character()
-  )
+  contract <- dataraft.core::dr_contract(node$name, columns = inferred) |>
+    dataraft.core::dr_contract_policy(required = character())
   contract$draft <- TRUE
   class(contract) <- c("dr_contract_draft", "dr_contract")
   contract

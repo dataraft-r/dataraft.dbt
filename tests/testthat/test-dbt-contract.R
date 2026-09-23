@@ -1,9 +1,11 @@
 test_that("minimal contracts export dbt schema and executable null and key tests", {
   schema <- dataraft.core::dr_contract(
     columns = c(id = "integer", amount = "numeric"),
-    key = "id",
-    column_metadata = list(amount = list(description = "Order value"))
-  )
+    key = "id"
+  ) |>
+    dataraft.core::dr_contract_meta(
+      column_metadata = list(amount = list(description = "Order value"))
+    )
   value <- dr_dbt_contract(schema, "orders")
   expect_type(value, "list")
   expect_identical(value$version, 2L)
@@ -49,9 +51,9 @@ test_that("quality engines and composite keys are never silently discarded", {
   expect_length(value$models[[1]]$config$meta$dataraft$untranslated, 3L)
   schema <- dataraft.core::dr_contract(
     columns = c(id = "integer"),
-    required = character(),
     key = "id"
-  )
+  ) |>
+    dataraft.core::dr_contract_policy(required = character())
   expect_error(dr_dbt_contract(schema, "orders"), "nullable unique key")
 })
 
