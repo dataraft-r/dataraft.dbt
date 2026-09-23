@@ -221,3 +221,104 @@ dbt_sql_types <- function(columns, overrides = NULL) {
   }
   result
 }
+
+#' Draft an R contract from explicit dbt manifest column types
+#'
+#' Reads a parsed manifest, a dbt result, or a directory containing manifest.json.
+#' Only declared column types are translated. No SQL is executed, and dbt tests,
+#' dependencies, semantic models, constraints or observed values are not treated
+#' as R quality guarantees. Required columns and keys must be reviewed separately.
+#' Unknown or absent SQL types require explicit R type overrides. The result is
+#' an unconfirmed draft; review it before calling [dataraft.core::dr_contract_confirm()].
+#' @param x Parsed manifest, dbt result or artifact directory.
+#' @param model Exact manifest node unique_id, for example `model.shop.orders`.
+#' @param types Optional named R type overrides for declared columns.
+#' @returns A contract draft with nullable columns and no inferred key.
+#' @export
+dr_dbt_contract_from_manifest <- function(x, model, types = NULL) {
+  manifest <- if (
+    is.list(x) && !inherits(x, "dr_dbt_result") && !is.null(x$nodes)
+  ) {
+    x
+  } else {
+    dbt_manifest(x)
+  }
+  dataraft.core::dr_internal_scalar(model, "model")
+  node <- manifest$nodes[[model]]
+  if (
+    is.null(node) ||
+      !identical(node$resource_type, "model") ||
+      !length(node$columns)
+  ) {
+    stop(
+      "Select an exact model unique_id with declared columns.",
+      call. = FALSE
+    )
+  }
+  columns <- node$columns
+  names <- names(columns)
+  if (is.null(names) || anyDuplicated(names) || any(!nzchar(names))) {
+    stop("Manifest columns must have unique names.", call. = FALSE)
+  }
+  mapping <- c(
+    varchar = "character",
+    text = "character",
+    string = "character",
+    integer = "integer",
+    int = "integer",
+    smallint = "integer",
+    bigint = "integer64",
+    double = "numeric",
+    float = "numeric",
+    real = "numeric",
+    boolean = "logical",
+    bool = "logical",
+    date = "Date",
+    timestamp = "POSIXct",
+    timestamptz = "POSIXct"
+  )
+  sql <- vapply(
+    columns,
+    function(column) {
+      value <- column$data_type
+      if (!is.character(value) || length(value) != 1L || is.na(value)) {
+        return("")
+      }
+      tolower(trimws(value))
+    },
+    character(1)
+  )
+  inferred <- stats::setNames(unname(mapping[sql]), names)
+  if (!is.null(types)) {
+    if (
+      !is.character(types) ||
+        is.null(names(types)) ||
+        anyNA(types) ||
+        anyDuplicated(names(types)) ||
+        any(!names(types) %in% names)
+    ) {
+      stop(
+        "types must name declared columns with explicit R types.",
+        call. = FALSE
+      )
+    }
+    inferred[names(types)] <- types
+  }
+  if (anyNA(inferred)) {
+    stop(
+      paste(
+        "Supply explicit R types for:",
+        paste(names[is.na(inferred)], collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  contract <- dataraft.core::dr_contract(
+    node$name,
+    columns = inferred,
+    required = character()
+  )
+  contract$draft <- TRUE
+  class(contract) <- c("dr_contract_draft", "dr_contract")
+  contract
+}

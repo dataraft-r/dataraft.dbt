@@ -56,7 +56,7 @@ an appropriate profile yourself and use \code{\link[=dr_dbt_project]{dr_dbt_proj
 uses the dbt-duckdb profile format; it does not install dbt or adapters.
 }
 \examples{
-\dontshow{if (requireNamespace("duckdb", quietly = TRUE) && requireNamespace("yaml", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (requireNamespace("duckdb", quietly = TRUE) && requireNamespace("yaml", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 root <- tempfile("dataraft-example-")
 config <- dataraft.lake::dr_lake_config(
   catalog = dataraft.lake::dr_registry_duckdb(file.path(root, "lake.duckdb")),

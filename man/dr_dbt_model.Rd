@@ -53,7 +53,7 @@ querying. Ephemeral models cannot be opened. This function does not certify
 that tables were successfully built or that they still match the artifacts.
 }
 \examples{
-\dontshow{if (nzchar(Sys.getenv("DATARAFT_DBT_EXAMPLE_PROJECT"))) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (nzchar(Sys.getenv("DATARAFT_DBT_EXAMPLE_PROJECT"))) withAutoprint(\{ # examplesIf}
 # See vignette("dbt-workflows") for a complete build and reconnect example.
 project <- dr_dbt_project(Sys.getenv("DATARAFT_DBT_EXAMPLE_PROJECT"))
 project

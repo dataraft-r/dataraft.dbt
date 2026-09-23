@@ -103,7 +103,7 @@ dr_dbt_project <- function(
 #'   exit
 #'   status, failed nodes or missing artifacts. The condition's `result` field
 #'   retains diagnostics. Set `FALSE` to inspect failures as ordinary results.
-#' @param catalog Optional [dataraft.catalog::dr_catalog_openmetadata_dbt()] adapter, a function
+#' @param catalog Optional [dataraft.adapters::dr_catalog_openmetadata_dbt()] adapter, a function
 #'   receiving the dbt result, or an S3 catalog whose `dataraft.core::dr_capabilities()` declares
 #'   `metadata_inputs = "dr_dbt_result"` and implements `dataraft.core::dr_publish_metadata()`.
 #'   After dbt

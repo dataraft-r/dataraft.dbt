@@ -49,7 +49,7 @@ exit
 status, failed nodes or missing artifacts. The condition's \code{result} field
 retains diagnostics. Set \code{FALSE} to inspect failures as ordinary results.}
 
-\item{catalog}{Optional \code{\link[dataraft.catalog:dr_catalog_openmetadata_dbt]{dataraft.catalog::dr_catalog_openmetadata_dbt()}} adapter, a function
+\item{catalog}{Optional \code{\link[dataraft.adapters:dr_catalog_openmetadata_dbt]{dataraft.adapters::dr_catalog_openmetadata_dbt()}} adapter, a function
 receiving the dbt result, or an S3 catalog whose \code{dataraft.core::dr_capabilities()} declares
 \code{metadata_inputs = "dr_dbt_result"} and implements \code{dataraft.core::dr_publish_metadata()}.
 After dbt
@@ -79,7 +79,7 @@ materialized even if a later model or test fails. dbt logs and artifacts can
 contain SQL, paths and database messages; treat them as project data.
 }
 \examples{
-\dontshow{if (nzchar(Sys.getenv("DATARAFT_DBT_EXAMPLE_PROJECT"))) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (nzchar(Sys.getenv("DATARAFT_DBT_EXAMPLE_PROJECT"))) withAutoprint(\{ # examplesIf}
 project <- dr_dbt_project(Sys.getenv("DATARAFT_DBT_EXAMPLE_PROJECT"))
 result <- dr_dbt_build(project, select = "tag:reporting", echo = FALSE)
 dr_dbt_status(result)
