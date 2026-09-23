@@ -35,16 +35,19 @@ test_that("dbt releases preserve snapshots and revalidate mutable source relatio
   contract <- dr_contract(
     "revenue",
     version = "1",
-    owner = "Analytics",
-    description = "Customer revenue",
-    grain = "One customer",
     columns = c(customer_id = "integer", revenue = "numeric"),
     key = "customer_id",
     rules = list(dr_quality_rule("positive", function(data) {
       counts <- dplyr::collect(dplyr::summarise(data, n = sum(revenue < 0)))
       counts$n == 0
     }))
-  )
+  ) |>
+    dataraft.core::dr_contract_meta(
+      owner = "Analytics",
+      description = "Customer revenue",
+      grain = "One customer",
+      producer = "Analytics"
+    )
   first <- dr_dbt_publish(
     f$lake,
     result,
