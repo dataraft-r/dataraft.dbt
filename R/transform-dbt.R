@@ -200,7 +200,7 @@ dr_capabilities.dr_dbt_transform <- function(x, ...) {
     write = TRUE,
     lazy = FALSE,
     transactions = FALSE,
-    partition = FALSE,
+
     immutable = FALSE
   )
 }

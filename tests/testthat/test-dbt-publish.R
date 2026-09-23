@@ -34,11 +34,11 @@ test_that("dbt releases preserve snapshots and revalidate mutable source relatio
   )
   contract <- dr_contract(
     "revenue",
-    "1",
-    "Analytics",
-    "Customer revenue",
-    "One customer",
-    c(customer_id = "integer", revenue = "numeric"),
+    version = "1",
+    owner = "Analytics",
+    description = "Customer revenue",
+    grain = "One customer",
+    columns = c(customer_id = "integer", revenue = "numeric"),
     key = "customer_id",
     rules = list(dr_quality_rule("positive", function(data) {
       counts <- dplyr::collect(dplyr::summarise(data, n = sum(revenue < 0)))
