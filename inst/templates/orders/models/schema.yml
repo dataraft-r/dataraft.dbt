@@ -1,0 +1,19 @@
+version: 2
+models:
+  - name: stg_orders
+    description: One row per order, with explicit source types.
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+      - name: customer_id
+        tests: [not_null]
+  - name: core_orders
+    description: Order amounts and a reusable positive-order flag.
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+  - name: customer_revenue
+    description: Revenue by customer.
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]

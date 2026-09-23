@@ -39,7 +39,7 @@ Coordinate concurrent project writers and close caller-owned lake handles
 before dbt execution.
 }
 \examples{
-\dontshow{if (requireNamespace("duckdb", quietly = TRUE) && requireNamespace("yaml", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (requireNamespace("duckdb", quietly = TRUE) && requireNamespace("yaml", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 root <- tempfile("dataraft-dbt-sources-")
 config <- dataraft.lake::dr_lake_config(
   dataraft.lake::dr_registry_duckdb(file.path(root, "lake.db")),

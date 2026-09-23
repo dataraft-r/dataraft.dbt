@@ -1,3 +1,10 @@
+# dataraft.dbt 0.1.0.9004
+
+* Implement provider S3 methods for core integration.
+* Move static example assets into inst/templates and add a bounded manifest-to-contract draft importer.
+
+* Use the umbrella CI manifest as the single immutable family dependency lock.
+
 # dataraft.dbt 0.1.0.9000
 
 * `dr_dbt_publish()` versions source code, configuration and dependencies without including invocation-dependent compiled SQL. Artifact integrity checks still cover compiled SQL.

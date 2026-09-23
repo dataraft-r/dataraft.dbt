@@ -101,3 +101,37 @@ test_that("contract exports survive ordinary YAML serialization", {
     c("integer", "date", "timestamptz")
   )
 })
+
+test_that("manifest import is a bounded unconfirmed schema draft", {
+  manifest <- list(
+    nodes = list(
+      "model.shop.orders" = list(
+        name = "orders",
+        resource_type = "model",
+        columns = list(
+          id = list(data_type = "integer"),
+          amount = list(data_type = "decimal(18,2)")
+        )
+      )
+    )
+  )
+  expect_error(
+    dr_dbt_contract_from_manifest(manifest, "model.shop.orders"),
+    "explicit R types"
+  )
+  draft <- dr_dbt_contract_from_manifest(
+    manifest,
+    "model.shop.orders",
+    c(amount = "numeric")
+  )
+  expect_s3_class(draft, "dr_contract_draft")
+  expect_length(draft$key, 0L)
+  expect_length(draft$required, 0L)
+  expect_error(
+    dataraft.core::dr_validate(data.frame(id = 1L, amount = 2), draft),
+    "confirm"
+  )
+  contract <- dataraft.core::dr_contract_confirm(draft)
+  expect_equal(unlist(contract$columns), c(id = "integer", amount = "numeric"))
+  expect_error(dr_dbt_contract_from_manifest(manifest, "orders"), "unique_id")
+})
