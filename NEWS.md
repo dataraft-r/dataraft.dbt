@@ -1,3 +1,7 @@
+# dataraft.dbt 0.1.0.9005
+
+* The adapter capability protocol no longer declares partition.
+
 # dataraft.dbt 0.1.0.9004
 
 * Implement provider S3 methods for core integration.
