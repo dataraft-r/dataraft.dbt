@@ -4,7 +4,7 @@
 
 Use this experimental integration when your SQL models already live in dbt. It can describe a dbt project, run builds and inspect artifacts. Managed publication requires a configured DataRaft lake. Running dbt alone does not create an atomic checked DataRaft release.
 
-[`dataraft` overview](https://github.com/dataraft-r/dataraft) · [dbt reference](https://dataraft-r.github.io/dataraft/packages/dataraft.dbt/)
+[`dataraft` overview](https://github.com/dataraft-r/dataraft) · [dbt reference](https://dataraft-r.github.io/dataraft/components/dataraft.dbt/reference/index.html)
 
 ## Describe a project
 
